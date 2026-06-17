@@ -1,0 +1,11 @@
+services:
+  audio-looper-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: audio-looper-api
+    ports:
+      - "8084:8084"
+    environment:
+      - GIN_MODE=release
+    restart: unless-stopped
