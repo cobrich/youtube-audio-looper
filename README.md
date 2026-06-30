@@ -1,38 +1,54 @@
-# YouTube Audio Looper
+````markdown
+# 🎵 YouTube Audio Looper
 
-A Go-based service and Telegram bot that extracts audio segments from YouTube videos, loops them to a user-defined duration, and returns the final MP3 file.
+REST API and Telegram bot for generating looped audio clips from YouTube videos.
 
-The project consists of two components:
+YouTube Audio Looper lets users select a specific segment from a YouTube video, repeat it to a custom duration, and receive the final MP3 file.
 
-* REST API for audio processing
-* Telegram Bot for user interaction
+Built with Go, Gin, FFmpeg, yt-dlp, Docker, and Telegram Bot API.
 
----
-
-## Why I Built This
-
-Sometimes a song contains only a small section that I want to listen to repeatedly, while the rest of the track is less interesting.
-
-Instead of manually downloading and editing audio files, I decided to build a service that automatically:
-
-* downloads audio from YouTube
-* extracts the desired segment
-* loops it to a specified duration
-* delivers the final MP3 directly through Telegram
-
-This project was built to solve a real personal problem while exploring audio processing, external tools integration, Docker, and Telegram bot development with Go.
+![Go](https://img.shields.io/badge/Go-1.26-00ADD8?style=for-the-badge&logo=go)
+![Gin](https://img.shields.io/badge/Gin-Framework-00ADD8?style=for-the-badge)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker)
+![FFmpeg](https://img.shields.io/badge/FFmpeg-Media_Processing-007808?style=for-the-badge)
+![Telegram](https://img.shields.io/badge/Telegram-Bot_API-26A5E4?style=for-the-badge&logo=telegram)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
 ---
 
-## Screenshot
+## Overview
 
-> Add your Telegram bot screenshots here.
+This project consists of two components:
 
-![Telegram Bot Demo](docs/images/demo.png)
+- **REST API** — downloads audio, cuts a selected segment, loops it, and returns MP3.
+- **Telegram Bot** — provides a simple step-by-step interface for users.
+
+It was built to solve a real problem: quickly creating repeated audio loops from favorite parts of YouTube videos without manually downloading and editing files.
+
+---
+
+## Features
+
+| Feature                | Description                                 |
+| ---------------------- | ------------------------------------------- |
+| YouTube audio download | Downloads audio using yt-dlp                |
+| Segment extraction     | Cuts selected part using FFmpeg             |
+| Audio looping          | Repeats selected segment to custom duration |
+| MP3 output             | Returns ready-to-use audio file             |
+| REST API               | Provides HTTP endpoint for audio generation |
+| Telegram Bot           | Step-by-step user flow                      |
+| Validation             | Validates URL, timestamps, and duration     |
+| Job workflow           | Creates isolated processing jobs            |
+| Docker support         | Runs API and dependencies in containers     |
+| Health check           | Simple endpoint for monitoring              |
 
 ---
 
 ## Demo
+
+![Telegram Bot Demo](docs/images/demo.png)
+
+Example bot flow:
 
 ```text
 User: https://youtube.com/watch?v=...
@@ -51,48 +67,70 @@ User: 01:00
 
 Bot: Processing...
 
-Bot: 🎵 looped-audio.mp3
-```
-
----
-
-## Features
-
-* Download audio from YouTube videos
-* Extract any audio segment
-* Loop the selected segment to a custom duration
-* Generate MP3 output
-* Telegram Bot integration
-* Docker support
-* Automatic temporary file cleanup
-* Request validation
-* Health check endpoint
-* Job-based processing workflow
+Bot: looped-audio.mp3
+````
 
 ---
 
 ## Architecture
 
-```text
-Telegram User
-      │
-      ▼
-Telegram Bot
-      │ HTTP
-      ▼
-Audio API
-      │
-      ├── yt-dlp
-      ├── ffmpeg (cut)
-      ├── ffmpeg (loop)
-      └── cleanup
-      │
-      ▼
-Generated MP3
-      │
-      ▼
-Telegram User
+```mermaid
+flowchart TD
+    User["Telegram User"] --> Bot["Telegram Bot"]
+    Bot --> Client["Audio API Client"]
+    Client --> API["Gin REST API"]
+
+    API --> Validator["Request Validator"]
+    Validator --> Job["Job Manager"]
+
+    Job --> Downloader["yt-dlp Downloader"]
+    Downloader --> Original["Original Audio"]
+
+    Original --> Cutter["FFmpeg Segment Cutter"]
+    Cutter --> Clip["Audio Clip"]
+
+    Clip --> Looper["FFmpeg Loop Processor"]
+    Looper --> Result["Result MP3"]
+
+    Result --> API
+    API --> Bot
+    Bot --> User
 ```
+
+---
+
+## Processing Workflow
+
+```text
+Request
+  ↓
+Validate YouTube URL and timestamps
+  ↓
+Create temporary job directory
+  ↓
+Download source audio with yt-dlp
+  ↓
+Extract selected segment with FFmpeg
+  ↓
+Loop segment to requested duration
+  ↓
+Return generated MP3 file
+  ↓
+Clean temporary files
+```
+
+---
+
+## Tech Stack
+
+| Component        | Technology             |
+| ---------------- | ---------------------- |
+| Language         | Go                     |
+| Web Framework    | Gin                    |
+| Audio Download   | yt-dlp                 |
+| Audio Processing | FFmpeg                 |
+| Bot              | Telegram Bot API       |
+| Deployment       | Docker, Docker Compose |
 
 ---
 
@@ -100,33 +138,36 @@ Telegram User
 
 ```text
 cmd/
-├── api/
-└── bot/
+├── api/                 # REST API entrypoint
+└── bot/                 # Telegram bot entrypoint
 
 internal/
-├── bot/
-├── client/
-├── config/
-├── downloader/
-├── entity/
-├── handler/
-├── processor/
-├── service/
-├── utils/
-└── validator/
+├── bot/                 # Telegram handlers and state machine
+├── client/              # API client used by bot
+├── config/              # Configuration
+├── downloader/          # yt-dlp wrapper
+├── entity/              # Request and job models
+├── handler/             # HTTP handlers
+├── processor/           # FFmpeg processing logic
+├── service/             # Audio service and job manager
+├── utils/               # Time and directory helpers
+└── validator/           # Request validation
+
+docs/
+└── images/
 ```
 
 ---
 
-## API Usage
+## API
 
-### Endpoint
+### Generate Looped Audio
 
 ```http
 POST /api/v1/audio/loop
 ```
 
-### Request Body
+### Request
 
 ```json
 {
@@ -139,61 +180,11 @@ POST /api/v1/audio/loop
 
 ### Response
 
-Returns a generated MP3 file.
+Returns generated MP3 file.
 
 ---
 
-## Telegram Bot Usage
-
-1. Start the bot using `/start`
-2. Send a YouTube URL
-3. Send the start timestamp
-4. Send the end timestamp
-5. Send the desired final duration
-6. Receive the generated MP3 file
-
----
-
-## Running Locally
-
-### Requirements
-
-* Go 1.26+
-* ffmpeg
-* yt-dlp
-
-### Run API
-
-```bash
-go run ./cmd/api
-```
-
-### Run Telegram Bot
-
-```bash
-export TELEGRAM_BOT_TOKEN=your_token
-export AUDIO_API_URL=http://localhost:8084
-
-go run ./cmd/bot
-```
-
----
-
-## Running with Docker
-
-### Build and Start
-
-```bash
-docker compose up --build
-```
-
-### Health Check
-
-```bash
-curl http://localhost:8084/health
-```
-
-### Example Request
+## Example Request
 
 ```bash
 curl -X POST http://localhost:8084/api/v1/audio/loop \
@@ -209,69 +200,145 @@ curl -X POST http://localhost:8084/api/v1/audio/loop \
 
 ---
 
-## Processing Workflow
+## Telegram Bot Usage
 
-```text
-Request
-    │
-    ▼
-Create Job Directory
-    │
-    ▼
-Download Audio
-    │
-    ▼
-Extract Segment
-    │
-    ▼
-Loop Segment
-    │
-    ▼
-Generate MP3
-    │
-    ▼
-Return File
-    │
-    ▼
-Cleanup Temporary Files
+1. Start the bot with `/start`
+2. Send a YouTube URL
+3. Send segment start timestamp
+4. Send segment end timestamp
+5. Send final audio duration
+6. Receive generated MP3 file
+
+---
+
+## Getting Started
+
+### Requirements
+
+* Go 1.26+
+* FFmpeg
+* yt-dlp
+* Docker
+
+---
+
+### Run API locally
+
+```bash
+go run ./cmd/api
 ```
 
 ---
 
-## Tech Stack
+### Run Telegram Bot locally
 
-### Backend
+```bash
+export TELEGRAM_BOT_TOKEN=your_token
+export AUDIO_API_URL=http://localhost:8084
 
-* Go 1.26
-* Gin
-
-### Audio Processing
-
-* ffmpeg
-* yt-dlp
-
-### Telegram
-
-* Telegram Bot API
-
-### Infrastructure
-
-* Docker
-* Docker Compose
+go run ./cmd/bot
+```
 
 ---
 
-## Future Improvements
+### Run with Docker
 
-* Railway deployment
-* VPS deployment
-* Rate limiting
-* User quotas
-* Audio format selection
-* Web interface
-* Usage analytics
-* User history
-* Caching
+```bash
+docker compose up --build
+```
+
+---
+
+## Health Check
+
+```http
+GET /health
+```
+
+```bash
+curl http://localhost:8084/health
+```
+
+---
+
+## Configuration
+
+Common environment variables:
+
+```env
+PORT=8084
+TELEGRAM_BOT_TOKEN=
+AUDIO_API_URL=http://localhost:8084
+```
+
+---
+
+## Important Note
+
+Some YouTube videos may require authentication or cookies due to YouTube anti-bot restrictions.
+
+In such cases, `yt-dlp` may return an error similar to:
+
+```text
+Sign in to confirm you’re not a bot
+```
+
+This is a YouTube-side restriction, not an application logic error.
+
+---
+
+## Engineering Highlights
+
+* REST API for media processing
+* Telegram bot state machine
+* yt-dlp integration
+* FFmpeg segment extraction
+* FFmpeg audio looping
+* Job-based temporary file handling
+* Request validation
+* Dockerized runtime
+* Separate API and bot entrypoints
+
+---
+
+## Roadmap
+
+* [x] REST API
+* [x] Telegram bot
+* [x] YouTube audio download
+* [x] Segment extraction
+* [x] Audio looping
+* [x] MP3 response
+* [x] Docker support
+* [x] Health check
+* [ ] Cookie-based YouTube authentication support
+* [ ] Rate limiting
+* [ ] User quotas
+* [ ] Audio format selection
+* [ ] Web interface
+* [ ] Usage analytics
+* [ ] File caching
+
+---
+
+## Lessons Learned
+
+Building this project helped me improve:
+
+* Go REST API development
+* Telegram bot state management
+* Media processing with FFmpeg
+* External process execution from Go
+* yt-dlp integration
+* Temporary file management
+* Docker-based deployment
+* Request validation and error handling
+
+---
+
+## License
+
+This project is licensed under the MIT License.
 
 ---
 
@@ -280,5 +347,7 @@ Cleanup Temporary Files
 Bekzat Tursun
 
 GitHub: https://github.com/cobrich
-
 LinkedIn: https://linkedin.com/in/tursunbekzat
+
+```
+```
