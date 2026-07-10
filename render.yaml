@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: youtube-audio-looper
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    autoDeploy: true

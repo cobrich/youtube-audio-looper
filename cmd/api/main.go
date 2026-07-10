@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/cobrich/youtube-audio-looper/internal/handler"
 	"github.com/cobrich/youtube-audio-looper/internal/service"
@@ -28,7 +29,12 @@ func main() {
 
 	log.Println("server started")
 
-	if err := router.Run(":8084"); err != nil {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8084"
+	}
+
+	if err := router.Run(":" + port); err != nil {
 		log.Fatal(err)
 	}
 }

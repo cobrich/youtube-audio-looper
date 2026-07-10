@@ -18,8 +18,6 @@ RUN apk add --no-cache \
     ffmpeg \
     python3 \
     py3-pip \
-    nodejs \
-    npm \
     ca-certificates
 
 RUN pip install --break-system-packages -U yt-dlp
@@ -27,6 +25,6 @@ RUN pip install --break-system-packages -U yt-dlp
 COPY --from=builder /app/audio-looper .
 COPY --from=builder /app/web ./web
 
-EXPOSE 8084
+EXPOSE 10000
 
 CMD ["./audio-looper"]
