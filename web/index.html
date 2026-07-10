@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>YouTube Audio Looper</title>
+    <link rel="stylesheet" href="/web/styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="panel">
+        <div class="heading">
+          <p class="eyebrow">YouTube Audio Looper</p>
+          <h1>Create looped audio</h1>
+        </div>
+
+        <form id="loop-form" class="form">
+          <label class="field">
+            <span>YouTube URL</span>
+            <input
+              id="youtube-url"
+              name="youtube_url"
+              type="url"
+              placeholder="https://www.youtube.com/watch?v=..."
+              autocomplete="url"
+              required
+            />
+          </label>
+
+          <div class="time-grid">
+            <label class="field">
+              <span>Start</span>
+              <input
+                id="start"
+                name="start"
+                type="text"
+                inputmode="numeric"
+                placeholder="00:42"
+                required
+              />
+            </label>
+
+            <label class="field">
+              <span>End</span>
+              <input
+                id="end"
+                name="end"
+                type="text"
+                inputmode="numeric"
+                placeholder="00:47"
+                required
+              />
+            </label>
+
+            <label class="field">
+              <span>Duration</span>
+              <input
+                id="duration"
+                name="duration"
+                type="text"
+                inputmode="numeric"
+                placeholder="01:00"
+                required
+              />
+            </label>
+          </div>
+
+          <button id="submit-button" type="submit">
+            <span class="button-icon" aria-hidden="true">▶</span>
+            <span>Create MP3</span>
+          </button>
+        </form>
+      </section>
+
+      <section id="result" class="result" aria-live="polite">
+        <div class="empty-state">
+          <p>Result audio will appear here after processing.</p>
+        </div>
+      </section>
+    </main>
+
+    <script src="/web/script.js" defer></script>
+  </body>
+</html>

@@ -16,6 +16,7 @@ func (d *YouTubeDownloader) DownloadAudio(ctx context.Context, youtubeURL string
 	cmd := exec.CommandContext(
 		ctx,
 		"yt-dlp",
+		"--no-playlist",
 		"-x",
 		"--audio-format", "mp3",
 		"--audio-quality", "0",

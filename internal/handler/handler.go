@@ -43,6 +43,8 @@ func (h *AudioHandler) CreateLoopedAudio(c *gin.Context) {
 
 	audioData, err := h.audioService.CreateLoopedAudio(req)
 	if err != nil {
+		log.Println("create audio error:", err)
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "failed to create audio",
 		})

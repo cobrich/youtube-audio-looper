@@ -13,6 +13,12 @@ func main() {
 
 	audioService := service.NewAudioService()
 	audioHandler := handler.NewAudioHandler(audioService)
+
+	router.Static("/web", "./web")
+	router.GET("/", func(c *gin.Context) {
+		c.File("./web/index.html")
+	})
+
 	router.GET("/health", handler.Health)
 
 	api := router.Group("api/v1")

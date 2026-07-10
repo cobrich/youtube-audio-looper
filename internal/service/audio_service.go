@@ -51,17 +51,26 @@ func (s *AudioService) CreateLoopedAudio(req entity.Request) ([]byte, error) {
 	clipPath := filepath.Join(job.Dir, "clip.mp3")
 	resultPath := filepath.Join(job.Dir, "result.mp3")
 
+	log.Printf("job=%s downloading audio", job.ID)
+	startedAt := time.Now()
 	if err := s.downloader.DownloadAudio(ctx, req.YoutubeURL, originalPath); err != nil {
 		return nil, err
 	}
+	log.Printf("job=%s downloaded audio in %s", job.ID, time.Since(startedAt))
 
+	log.Printf("job=%s cutting audio", job.ID)
+	startedAt = time.Now()
 	if err := s.processor.CutAudio(ctx, originalPath, clipPath, req.Start, req.End); err != nil {
 		return nil, err
 	}
+	log.Printf("job=%s cut audio in %s", job.ID, time.Since(startedAt))
 
+	log.Printf("job=%s looping audio", job.ID)
+	startedAt = time.Now()
 	if err := s.processor.LoopAudio(ctx, clipPath, resultPath, req.Duration); err != nil {
 		return nil, err
 	}
+	log.Printf("job=%s looped audio in %s", job.ID, time.Since(startedAt))
 
 	data, err := os.ReadFile(resultPath)
 	if err != nil {
