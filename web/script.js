@@ -6,6 +6,9 @@ let currentAudioUrl = null;
 let progressTimer = null;
 let progressStartedAt = null;
 
+const historyKey = "youtube-audio-looper-history";
+const maxHistoryItems = 5;
+
 const progressSteps = [
   { at: 0, label: "Preparing request" },
   { at: 8, label: "Connecting to YouTube" },
@@ -26,6 +29,70 @@ function clearAudioUrl() {
     URL.revokeObjectURL(currentAudioUrl);
     currentAudioUrl = null;
   }
+}
+
+function readHistory() {
+  try {
+    return JSON.parse(localStorage.getItem(historyKey) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function writeHistory(items) {
+  try {
+    localStorage.setItem(historyKey, JSON.stringify(items.slice(0, maxHistoryItems)));
+  } catch (error) {
+    console.warn("Could not save history", error);
+  }
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(reader.result));
+    reader.addEventListener("error", () => reject(reader.error));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function formatDate(value) {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function getHistoryTitle(item) {
+  try {
+    const parsedURL = new URL(item.request.youtube_url);
+    return parsedURL.searchParams.get("v") || parsedURL.hostname;
+  } catch {
+    return item.request.youtube_url;
+  }
+}
+
+function fillFormFromRequest(request) {
+  form.elements.youtube_url.value = request.youtube_url;
+  form.elements.start.value = request.start;
+  form.elements.end.value = request.end;
+  form.elements.duration.value = request.duration;
+}
+
+async function saveHistoryItem(blob, request) {
+  const dataUrl = await blobToDataUrl(blob);
+  const items = readHistory();
+  const nextItems = [
+    {
+      id: String(Date.now()),
+      createdAt: new Date().toISOString(),
+      request,
+      dataUrl,
+    },
+    ...items,
+  ];
+
+  writeHistory(nextItems);
 }
 
 function stopProgress() {
@@ -99,18 +166,62 @@ function showError(message) {
   `;
 }
 
-function showAudio(blob) {
+function showAudioSource(audioSource, request) {
   stopProgress();
-  clearAudioUrl();
-  currentAudioUrl = URL.createObjectURL(blob);
 
   result.className = "result result-success";
   result.innerHTML = `
     <h2>Looped audio is ready</h2>
-    <audio controls src="${currentAudioUrl}"></audio>
-    <a class="download-link" href="${currentAudioUrl}" download="looped-audio.mp3">
+    <audio controls src="${audioSource}"></audio>
+    <a class="download-link" href="${audioSource}" download="looped-audio.mp3">
       Download MP3
     </a>
+    ${request ? `<p class="result-details">${escapeHtml(request.start)}-${escapeHtml(request.end)} to ${escapeHtml(request.duration)}</p>` : ""}
+    ${renderHistory()}
+  `;
+}
+
+function showAudio(blob, request) {
+  clearAudioUrl();
+  currentAudioUrl = URL.createObjectURL(blob);
+  showAudioSource(currentAudioUrl, request);
+}
+
+function showStoredAudio(item) {
+  clearAudioUrl();
+  fillFormFromRequest(item.request);
+  showAudioSource(item.dataUrl, item.request);
+}
+
+function renderHistory() {
+  const items = readHistory();
+
+  if (items.length === 0) {
+    return "";
+  }
+
+  return `
+    <section class="history">
+      <div class="history-header">
+        <h3>Recent audio</h3>
+        <button class="history-clear" type="button" data-clear-history>Clear</button>
+      </div>
+      <div class="history-list">
+        ${items
+          .map(
+            (item) => `
+              <article class="history-item">
+                <button class="history-play" type="button" data-history-id="${escapeHtml(item.id)}">
+                  <span>${escapeHtml(getHistoryTitle(item))}</span>
+                  <small>${escapeHtml(item.request.start)}-${escapeHtml(item.request.end)} - ${escapeHtml(item.request.duration)}</small>
+                  <small>${escapeHtml(formatDate(item.createdAt))}</small>
+                </button>
+              </article>
+            `,
+          )
+          .join("")}
+      </div>
+    </section>
   `;
 }
 
@@ -165,10 +276,40 @@ form.addEventListener("submit", async (event) => {
 
     const blob = await response.blob();
     updateProgress(100);
-    showAudio(blob);
+    await saveHistoryItem(blob, payload);
+    showAudio(blob, payload);
   } catch (error) {
     showError(error.message || "Network error");
   } finally {
     setLoading(false);
   }
 });
+
+result.addEventListener("click", (event) => {
+  const historyButton = event.target.closest("[data-history-id]");
+  const clearButton = event.target.closest("[data-clear-history]");
+
+  if (historyButton) {
+    const item = readHistory().find((historyItem) => historyItem.id === historyButton.dataset.historyId);
+    if (item) {
+      showStoredAudio(item);
+    }
+  }
+
+  if (clearButton) {
+    writeHistory([]);
+    clearAudioUrl();
+    result.className = "result";
+    result.innerHTML = `
+      <div class="empty-state">
+        <p>Result audio will appear here after processing.</p>
+      </div>
+    `;
+  }
+});
+
+const latestHistoryItem = readHistory()[0];
+
+if (latestHistoryItem) {
+  showStoredAudio(latestHistoryItem);
+}
