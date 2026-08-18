@@ -18,8 +18,8 @@ Live app: https://youtube-audio-looper.onrender.com/
 | Web UI | Browser form for creating and downloading looped MP3 files |
 | REST API | `POST /api/v1/audio/loop` returns generated MP3 audio |
 | Telegram bot | Conversational flow for the same audio generation workflow |
-| YouTube download | Uses `yt-dlp` and downloads only the requested video, not playlists |
-| Segment extraction | Cuts the requested audio range with FFmpeg |
+| YouTube download | Uses `yt-dlp` and downloads only the requested video segment, not full playlists |
+| Segment extraction | Requests the selected audio range during download |
 | Audio looping | Repeats the selected segment to the requested final duration |
 | Validation | Validates YouTube URL, timestamps, clip length, and duration |
 | Isolated jobs | Uses per-request temporary job directories and cleans them up |
@@ -240,8 +240,7 @@ docs/
 Request
   -> Validate URL and timestamps
   -> Create temporary job directory
-  -> Download source audio with yt-dlp
-  -> Cut selected segment with FFmpeg
+  -> Download selected audio segment with yt-dlp
   -> Loop segment to requested duration
   -> Return MP3 response
   -> Remove temporary files

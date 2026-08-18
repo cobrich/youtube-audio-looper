@@ -22,12 +22,14 @@ func NewYouTubeDownloader() *YouTubeDownloader {
 	return &YouTubeDownloader{}
 }
 
-func (d *YouTubeDownloader) DownloadAudio(ctx context.Context, youtubeURL string, outputPath string) error {
+func (d *YouTubeDownloader) DownloadAudioSegment(ctx context.Context, youtubeURL, outputPath, start, end string) error {
 	downloadURL := normalizeYouTubeURL(youtubeURL)
+	section := fmt.Sprintf("*%s-%s", normalizeTimestamp(start), normalizeTimestamp(end))
 
 	args := []string{
 		"yt-dlp",
 		"--no-playlist",
+		"--download-sections", section,
 		"-f", "bestaudio/best",
 		"-x",
 		"--audio-format", "mp3",
@@ -72,6 +74,10 @@ func (d *YouTubeDownloader) DownloadAudio(ctx context.Context, youtubeURL string
 	return nil
 }
 
+func (d *YouTubeDownloader) DownloadAudio(ctx context.Context, youtubeURL string, outputPath string) error {
+	return d.DownloadAudioSegment(ctx, youtubeURL, outputPath, "00:00", "inf")
+}
+
 func copyCookiesToTempFile(cookiesPath string) (string, error) {
 	data, err := os.ReadFile(cookiesPath)
 	if err != nil {
@@ -103,4 +109,12 @@ func normalizeYouTubeURL(rawURL string) string {
 	}
 
 	return parsedURL.String()
+}
+
+func normalizeTimestamp(value string) string {
+	if value == "inf" || strings.Count(value, ":") == 2 {
+		return value
+	}
+
+	return "00:" + value
 }
