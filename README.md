@@ -9,6 +9,8 @@ The project includes:
 - Telegram bot for a step-by-step chat flow.
 - Docker setup with FFmpeg and yt-dlp.
 
+Live app: https://youtube-audio-looper.onrender.com/
+
 ## Features
 
 | Feature | Description |
@@ -30,6 +32,12 @@ The project includes:
 - Docker and Docker Compose, if running containerized
 
 ## Quick Start
+
+Use the deployed app:
+
+```text
+https://youtube-audio-looper.onrender.com/
+```
 
 Run the API and web UI:
 
@@ -60,6 +68,12 @@ The web UI is served by the API process:
 - Error responses are shown on the page.
 
 Expected time fields use `MM:SS` or `HH:MM:SS`.
+
+Production URL:
+
+```text
+https://youtube-audio-looper.onrender.com/
+```
 
 ## API
 
@@ -152,6 +166,12 @@ http://localhost:8084/
 ```
 
 ## Render Deployment Notes
+
+Current Render URL:
+
+```text
+https://youtube-audio-looper.onrender.com/
+```
 
 Some YouTube videos require an authenticated browser session and `yt-dlp` can fail with:
 
