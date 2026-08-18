@@ -151,6 +151,29 @@ Then open:
 http://localhost:8084/
 ```
 
+## Render Deployment Notes
+
+Some YouTube videos require an authenticated browser session and `yt-dlp` can fail with:
+
+```text
+Sign in to confirm you're not a bot
+```
+
+For Render, upload a cookies file as a secret file:
+
+1. Export YouTube cookies in Netscape/Mozilla `cookies.txt` format.
+2. In Render, open the service and go to **Environment**.
+3. Under **Secret Files**, add a file named `youtube-cookies.txt`.
+4. Set environment variable `YTDLP_COOKIES_PATH` to:
+
+```text
+/etc/secrets/youtube-cookies.txt
+```
+
+5. Save and redeploy the service.
+
+Do not commit cookies to git. Cookies are account credentials and should be treated as secrets.
+
 ## Project Structure
 
 ```text

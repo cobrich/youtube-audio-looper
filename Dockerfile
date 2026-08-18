@@ -16,6 +16,7 @@ WORKDIR /app
 
 RUN apk add --no-cache \
     ffmpeg \
+    nodejs \
     python3 \
     py3-pip \
     ca-certificates

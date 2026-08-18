@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"errors"
 	"log"
 	"net/http"
 
+	"github.com/cobrich/youtube-audio-looper/internal/downloader"
 	"github.com/cobrich/youtube-audio-looper/internal/entity"
 	"github.com/cobrich/youtube-audio-looper/internal/service"
 	"github.com/cobrich/youtube-audio-looper/internal/validator"
@@ -45,9 +47,14 @@ func (h *AudioHandler) CreateLoopedAudio(c *gin.Context) {
 	if err != nil {
 		log.Println("create audio error:", err)
 
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to create audio",
-		})
+		if errors.Is(err, downloader.ErrAuthenticationRequired) {
+			c.JSON(http.StatusBadGateway, gin.H{
+				"error": "YouTube requires authentication for this video. Configure server cookies and try again.",
+			})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create audio"})
 		return
 	}
 
