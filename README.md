@@ -178,11 +178,13 @@ Do not commit cookies to git. Cookies are account credentials and should be trea
 After redeploy, the logs should include:
 
 ```text
-yt-dlp cookies configured path=/etc/secrets/youtube-cookies.txt size=...
+yt-dlp cookies configured path=/etc/secrets/youtube-cookies.txt
 yt-dlp user agent configured
 ```
 
 If logs say `yt-dlp cookies not configured`, Render is still running without the cookie secret or `YTDLP_COOKIES_PATH` value.
+
+Render secret files are read-only, so the app copies the cookie file to temporary storage before running `yt-dlp`.
 
 ## Project Structure
 

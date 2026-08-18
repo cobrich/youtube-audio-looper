@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -22,24 +23,28 @@ func NewYouTubeDownloader() *YouTubeDownloader {
 }
 
 func (d *YouTubeDownloader) DownloadAudio(ctx context.Context, youtubeURL string, outputPath string) error {
+	downloadURL := normalizeYouTubeURL(youtubeURL)
+
 	args := []string{
 		"yt-dlp",
 		"--no-playlist",
+		"-f", "bestaudio/best",
 		"-x",
 		"--audio-format", "mp3",
 		"--audio-quality", "0",
 		"-o", outputPath,
-		youtubeURL,
+		downloadURL,
 	}
 
 	if cookiesPath := os.Getenv("YTDLP_COOKIES_PATH"); cookiesPath != "" {
-		info, err := os.Stat(cookiesPath)
+		tempCookiesPath, err := copyCookiesToTempFile(cookiesPath)
 		if err != nil {
-			return fmt.Errorf("%w: %s: %v", ErrCookieFileUnavailable, cookiesPath, err)
+			return err
 		}
+		defer os.Remove(tempCookiesPath)
 
-		log.Printf("yt-dlp cookies configured path=%s size=%d", cookiesPath, info.Size())
-		args = append([]string{"yt-dlp", "--cookies", cookiesPath}, args[1:]...)
+		log.Printf("yt-dlp cookies configured path=%s", cookiesPath)
+		args = append([]string{"yt-dlp", "--cookies", tempCookiesPath}, args[1:]...)
 	} else {
 		log.Println("yt-dlp cookies not configured")
 	}
@@ -50,7 +55,7 @@ func (d *YouTubeDownloader) DownloadAudio(ctx context.Context, youtubeURL string
 	}
 
 	if _, err := exec.LookPath("node"); err == nil {
-		args = append([]string{"yt-dlp", "--js-runtimes", "node"}, args[1:]...)
+		args = append([]string{"yt-dlp", "--remote-components", "ejs:github", "--js-runtimes", "node"}, args[1:]...)
 	}
 
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
@@ -65,4 +70,37 @@ func (d *YouTubeDownloader) DownloadAudio(ctx context.Context, youtubeURL string
 	}
 
 	return nil
+}
+
+func copyCookiesToTempFile(cookiesPath string) (string, error) {
+	data, err := os.ReadFile(cookiesPath)
+	if err != nil {
+		return "", fmt.Errorf("%w: %s: %v", ErrCookieFileUnavailable, cookiesPath, err)
+	}
+
+	tempFile, err := os.CreateTemp("", "yt-dlp-cookies-*.txt")
+	if err != nil {
+		return "", fmt.Errorf("create temporary cookie file: %w", err)
+	}
+	defer tempFile.Close()
+
+	if _, err := tempFile.Write(data); err != nil {
+		os.Remove(tempFile.Name())
+		return "", fmt.Errorf("write temporary cookie file: %w", err)
+	}
+
+	return tempFile.Name(), nil
+}
+
+func normalizeYouTubeURL(rawURL string) string {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+
+	if strings.EqualFold(parsedURL.Host, "music.youtube.com") {
+		parsedURL.Host = "www.youtube.com"
+	}
+
+	return parsedURL.String()
 }
