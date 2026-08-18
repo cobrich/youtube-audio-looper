@@ -3,6 +3,16 @@ const submitButton = document.querySelector("#submit-button");
 const result = document.querySelector("#result");
 
 let currentAudioUrl = null;
+let progressTimer = null;
+let progressStartedAt = null;
+
+const progressSteps = [
+  { at: 0, label: "Preparing request" },
+  { at: 8, label: "Connecting to YouTube" },
+  { at: 22, label: "Downloading selected segment" },
+  { at: 68, label: "Creating audio loop" },
+  { at: 88, label: "Finalizing MP3" },
+];
 
 function setLoading(isLoading) {
   submitButton.disabled = isLoading;
@@ -18,7 +28,69 @@ function clearAudioUrl() {
   }
 }
 
+function stopProgress() {
+  if (progressTimer) {
+    clearInterval(progressTimer);
+    progressTimer = null;
+  }
+}
+
+function getProgressLabel(progress) {
+  return progressSteps.reduce((current, step) => {
+    return progress >= step.at ? step.label : current;
+  }, progressSteps[0].label);
+}
+
+function updateProgress(progress) {
+  const progressValue = Math.min(Math.round(progress), progress >= 100 ? 100 : 99);
+  const track = result.querySelector(".progress-track");
+  const bar = result.querySelector("#progress-bar");
+  const percent = result.querySelector("#progress-percent");
+  const status = result.querySelector("#progress-status");
+  const elapsed = result.querySelector("#progress-elapsed");
+
+  if (!track || !bar || !percent || !status || !elapsed || !progressStartedAt) {
+    return;
+  }
+
+  const elapsedSeconds = Math.floor((Date.now() - progressStartedAt) / 1000);
+  track.setAttribute("aria-valuenow", String(progressValue));
+  bar.style.width = `${progressValue}%`;
+  percent.textContent = `${progressValue}%`;
+  status.textContent = getProgressLabel(progressValue);
+  elapsed.textContent = `${elapsedSeconds}s elapsed`;
+}
+
+function startProgress() {
+  stopProgress();
+  progressStartedAt = Date.now();
+
+  result.className = "result result-loading";
+  result.innerHTML = `
+    <div class="progress-header">
+      <h2>Creating audio</h2>
+      <span id="progress-percent">0%</span>
+    </div>
+    <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+      <div id="progress-bar" class="progress-bar"></div>
+    </div>
+    <div class="progress-meta">
+      <p id="progress-status">Preparing request</p>
+      <span id="progress-elapsed">0s elapsed</span>
+    </div>
+  `;
+
+  updateProgress(2);
+
+  progressTimer = setInterval(() => {
+    const elapsedSeconds = (Date.now() - progressStartedAt) / 1000;
+    const progress = Math.min(92, 6 + elapsedSeconds * 2.2);
+    updateProgress(progress);
+  }, 500);
+}
+
 function showError(message) {
+  stopProgress();
   clearAudioUrl();
   result.className = "result result-error";
   result.innerHTML = `
@@ -28,6 +100,7 @@ function showError(message) {
 }
 
 function showAudio(blob) {
+  stopProgress();
   clearAudioUrl();
   currentAudioUrl = URL.createObjectURL(blob);
 
@@ -73,13 +146,8 @@ form.addEventListener("submit", async (event) => {
     duration: formData.get("duration").trim(),
   };
 
-  result.className = "result result-loading";
-  result.innerHTML = `
-    <div class="spinner" aria-hidden="true"></div>
-    <p>Downloading, cutting, and looping audio...</p>
-  `;
-
   setLoading(true);
+  startProgress();
 
   try {
     const response = await fetch("/api/v1/audio/loop", {
@@ -96,6 +164,7 @@ form.addEventListener("submit", async (event) => {
     }
 
     const blob = await response.blob();
+    updateProgress(100);
     showAudio(blob);
   } catch (error) {
     showError(error.message || "Network error");
