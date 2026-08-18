@@ -34,8 +34,11 @@
                 id="start"
                 name="start"
                 type="text"
-                inputmode="numeric"
+                inputmode="text"
+                pattern="([0-9]{2}:)?[0-9]{2}:[0-9]{2}"
                 placeholder="00:42"
+                title="Use MM:SS or HH:MM:SS"
+                autocomplete="off"
                 required
               />
             </label>
@@ -46,8 +49,11 @@
                 id="end"
                 name="end"
                 type="text"
-                inputmode="numeric"
+                inputmode="text"
+                pattern="([0-9]{2}:)?[0-9]{2}:[0-9]{2}"
                 placeholder="00:47"
+                title="Use MM:SS or HH:MM:SS"
+                autocomplete="off"
                 required
               />
             </label>
@@ -58,8 +64,11 @@
                 id="duration"
                 name="duration"
                 type="text"
-                inputmode="numeric"
+                inputmode="text"
+                pattern="([0-9]{2}:)?[0-9]{2}:[0-9]{2}"
                 placeholder="01:00"
+                title="Use MM:SS or HH:MM:SS"
+                autocomplete="off"
                 required
               />
             </label>
