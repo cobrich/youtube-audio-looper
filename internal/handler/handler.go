@@ -54,6 +54,13 @@ func (h *AudioHandler) CreateLoopedAudio(c *gin.Context) {
 			return
 		}
 
+		if errors.Is(err, downloader.ErrCookieFileUnavailable) {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Server cookie file is not available. Check YTDLP_COOKIES_PATH configuration.",
+			})
+			return
+		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create audio"})
 		return
 	}

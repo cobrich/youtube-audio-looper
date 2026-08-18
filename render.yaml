@@ -8,3 +8,5 @@ services:
     envVars:
       - key: YTDLP_COOKIES_PATH
         sync: false
+      - key: YTDLP_USER_AGENT
+        sync: false

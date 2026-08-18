@@ -170,9 +170,19 @@ For Render, upload a cookies file as a secret file:
 /etc/secrets/youtube-cookies.txt
 ```
 
-5. Save and redeploy the service.
+5. Set `YTDLP_USER_AGENT` to the full user-agent string from the same browser session you exported cookies from.
+6. Save and redeploy the service.
 
 Do not commit cookies to git. Cookies are account credentials and should be treated as secrets.
+
+After redeploy, the logs should include:
+
+```text
+yt-dlp cookies configured path=/etc/secrets/youtube-cookies.txt size=...
+yt-dlp user agent configured
+```
+
+If logs say `yt-dlp cookies not configured`, Render is still running without the cookie secret or `YTDLP_COOKIES_PATH` value.
 
 ## Project Structure
 
